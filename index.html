@@ -16,6 +16,9 @@
             font-family: 'Inter', sans-serif;
         }
     </style>
+    <!-- Thư viện Firebase SDK cho HTML thuần -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 
 <body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
@@ -667,6 +670,80 @@
                 toast.classList.remove('translate-x-0', 'opacity-100');
                 toast.classList.add('translate-x-full', 'opacity-0');
             }, 3000);
+        }
+        // 1. Mã cấu hình Firebase (Đã cài chuẩn thông số dự án webtoan của ní)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvLFAeH3Wl0CBpvrG6PCjTlzX2yrBtsmA",
+            authDomain: "web-ho-dab1d.firebaseapp.com",
+            databaseURL: "https://web-ho-dab1d-default-rtdb.firebaseio.com",
+            projectId: "web-ho-dab1d",
+            storageBucket: "web-ho-dab1d.firebasestorage.app",
+            messagingSenderId: "84943880541",
+            appId: "1:84943880541:web:5ea83270c01e63298b68b4",
+            measurementId: "G-B0BGHLFKEL"
+        };
+
+        // 2. Khởi tạo kết nối Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 3. Dữ liệu bài học mặc định
+        const defaultLessons = {
+            math12: [{ id: 1, title: "Bài 1: Khảo sát sự biến thiên & Đồ thị hàm số", src: "" }],
+            math11: [{ id: 1, title: "Bài 1: Phép quay & Phép dời hình trong mặt phẳng", src: "" }],
+            math10: [{ id: 1, title: "Bài 1: Mệnh đề & Tập hợp cơ bản", src: "" }]
+        };
+
+        let lessonsStore = defaultLessons;
+
+        // 4. Lắng nghe và đồng bộ bài học thời gian thực từ đám mây
+        db.ref('lessons').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                lessonsStore = data;
+            } else {
+                db.ref('lessons').set(defaultLessons);
+            }
+            if (typeof renderPlaylist === 'function') renderPlaylist();
+        });
+
+        // 5. Hàm thêm bài giảng đồng bộ trực tiếp lên đám mây Firebase
+        function handleUploadVideo() {
+            const titleInput = document.getElementById('uploadTitle').value.trim();
+            const urlInput = document.getElementById('videoUrlInput').value.trim();
+
+            if (!titleInput) {
+                showToast("⚠️ Vui lòng nhập tên bài giảng!");
+                return;
+            }
+
+            if (!urlInput) {
+                showToast("⚠️ Vui lòng dán đường link video (YouTube)!");
+                return;
+            }
+
+            const newLesson = {
+                id: Date.now(),
+                title: titleInput,
+                src: urlInput
+            };
+
+            if (!lessonsStore[currentCourseKey]) {
+                lessonsStore[currentCourseKey] = [];
+            }
+            lessonsStore[currentCourseKey].push(newLesson);
+
+            // Đẩy bài học mới lên Firebase
+            db.ref('lessons').set(lessonsStore)
+                .then(() => {
+                    showToast("🎉 Đã đồng bộ bài giảng lên trang web!");
+                    if (typeof playVideo === 'function') playVideo(newLesson);
+                    document.getElementById('uploadTitle').value = '';
+                    document.getElementById('videoUrlInput').value = '';
+                })
+                .catch((error) => {
+                    showToast("❌ Lỗi đồng bộ: " + error.message);
+                });
         }
     </script>
 </body>
