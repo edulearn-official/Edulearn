@@ -403,6 +403,15 @@
                     class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
                 <input type="password" placeholder="Mật khẩu" required
                     class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                <!-- Ô chọn Vai trò -->
+                <div class="text-left">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Bạn là:</label>
+                    <select id="regRole"
+                        class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none font-medium text-slate-700">
+                        <option value="student">🎓 Học sinh</option>
+                        <option value="teacher">👨‍🏫 Giáo viên</option>
+                    </select>
+                </div>
                 <button type="submit"
                     class="w-full py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition text-sm">Đăng
                     Ký</button>
@@ -496,30 +505,68 @@
             if (modal) modal.classList.add('hidden');
         }
 
-        // 4. Xử lý Đăng Nhập / Đăng Ký / Đăng Xuất
-        function handleLogin(event) {
-            if (event) event.preventDefault();
-            const usernameElem = document.getElementById('loginUsername');
-            const usernameInput = usernameElem ? usernameElem.value.trim() : '';
-            const nameFromEmail = usernameInput.includes('@') ? usernameInput.split('@')[0] : usernameInput;
-            const userData = { name: nameFromEmail || "Học Viên", progress: { math12: 0, math11: 0, math10: 0 } };
-
-            localStorage.setItem('eduMathUser', JSON.stringify(userData));
-            closeLoginModal();
-            checkUserState();
-            showToast(`🎉 Chào mừng ${userData.name} quay trở lại!`);
-        }
-
+        // 4. Xử lý Đăng Nhập / Đăng Ký / Đăng Xuất (Đã nâng cấp chặn đăng nhập khi chưa đăng ký)
         function handleRegister(event) {
             if (event) event.preventDefault();
-            const nameElem = document.getElementById('regFullName');
-            const fullName = nameElem ? nameElem.value.trim() : 'Học Viên';
-            const userData = { name: fullName || "Học Viên", progress: { math12: 0, math11: 0, math10: 0 } };
+            const fullName = document.getElementById('regFullName')?.value.trim() || 'Học Viên';
+            const role = document.getElementById('regRole')?.value || 'student';
 
-            localStorage.setItem('eduMathUser', JSON.stringify(userData));
+            // Lấy email từ ô nhập email trong form đăng ký
+            const emailElem = document.querySelector('#registerModal input[type="email"]');
+            const email = emailElem ? emailElem.value.trim().toLowerCase() : '';
+
+            if (!email) {
+                showToast("⚠️ Vui lòng nhập Email!");
+                return;
+            }
+
+            let usersList = JSON.parse(localStorage.getItem('eduMathUsersList')) || [];
+
+            // Kiểm tra Email đã tồn tại chưa
+            const existingUser = usersList.find(u => u.email === email);
+            if (existingUser) {
+                showToast("❌ Email này đã được đăng ký! Vui lòng đăng nhập.");
+                return;
+            }
+
+            const newUser = {
+                email: email,
+                name: fullName,
+                role: role,
+                progress: { math12: 0, math11: 0, math10: 0 }
+            };
+
+            usersList.push(newUser);
+            localStorage.setItem('eduMathUsersList', JSON.stringify(usersList));
+            localStorage.setItem('eduMathUser', JSON.stringify(newUser));
+
             closeRegisterModal();
             checkUserState();
-            showToast(`🎉 Đăng ký thành công! Chào mừng ${userData.name}.`);
+            showToast(`🎉 Đăng ký thành công! Chào mừng ${newUser.name} (${role === 'teacher' ? 'Giáo viên' : 'Học sinh'}).`);
+        }
+
+        function handleLogin(event) {
+            if (event) event.preventDefault();
+            const usernameInput = document.getElementById('loginUsername')?.value.trim().toLowerCase() || '';
+
+            if (!usernameInput) {
+                showToast("⚠️ Vui lòng nhập Tên đăng nhập hoặc Email!");
+                return;
+            }
+
+            const usersList = JSON.parse(localStorage.getItem('eduMathUsersList')) || [];
+
+            // Tìm tài khoản theo Email hoặc Tên trong danh sách đã đăng ký
+            const foundUser = usersList.find(u => u.email === usernameInput || u.name.toLowerCase() === usernameInput);
+
+            if (foundUser) {
+                localStorage.setItem('eduMathUser', JSON.stringify(foundUser));
+                closeLoginModal();
+                checkUserState();
+                showToast(`🎉 Chào mừng ${foundUser.name} quay trở lại!`);
+            } else {
+                showToast("❌ Tài khoản chưa tồn tại! Vui lòng Đăng ký trước.");
+            }
         }
 
         function handleLogout() {
