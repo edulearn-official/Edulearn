@@ -414,7 +414,7 @@
          JAVASCRIPT LOGIC
          ========================================================= -->
     <script>
-        // 1. Mã cấu hình Firebase (Kết nối cơ sở dữ liệu webtoan)
+        // 1. Mã cấu hình Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCvLFAeH3Wl0CBpvrG6PCjTlzX2yrBtsmA",
             authDomain: "web-ho-dab1d.firebaseapp.com",
@@ -426,11 +426,19 @@
             measurementId: "G-B0BGHLFKEL"
         };
 
+        let db = null;
+
         // Khởi tạo Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.database();
+            }
+        } catch (e) {
+            console.warn("Chưa tải được Firebase CDN.");
         }
-        const db = firebase.database();
 
         // 2. Dữ liệu danh sách khóa học
         const coursesData = {
@@ -441,63 +449,115 @@
 
         let currentCourseKey = 'math12';
 
-        // Cấu hình bài học mặc định nếu cơ sở dữ liệu chưa có
         const defaultLessons = {
-            math12: [
-                { id: 1, title: "Bài 1: Khảo sát sự biến thiên & Đồ thị hàm số", src: "" }
-            ],
-            math11: [
-                { id: 1, title: "Bài 1: Phép quay & Phép dời hình trong mặt phẳng", src: "" }
-            ],
-            math10: [
-                { id: 1, title: "Bài 1: Mệnh đề & Tập hợp cơ bản", src: "" }
-            ]
+            math12: [{ id: 1, title: "Bài 1: Khảo sát sự biến thiên & Đồ thị hàm số", src: "" }],
+            math11: [{ id: 1, title: "Bài 1: Phép quay & Phép dời hình trong mặt phẳng", src: "" }],
+            math10: [{ id: 1, title: "Bài 1: Mệnh đề & Tập hợp cơ bản", src: "" }]
         };
 
-        let lessonsStore = defaultLessons;
+        let lessonsStore = JSON.parse(localStorage.getItem('eduMathLessons')) || defaultLessons;
 
-        // 3. Lắng nghe & Đồng bộ dữ liệu bài học Realtime từ Firebase
-        db.ref('lessons').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                lessonsStore = data;
-            } else {
-                db.ref('lessons').set(defaultLessons);
-            }
-            if (typeof renderPlaylist === 'function') renderPlaylist();
-        });
+        // Lắng nghe Firebase Realtime
+        if (db) {
+            db.ref('lessons').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    lessonsStore = data;
+                    localStorage.setItem('eduMathLessons', JSON.stringify(data));
+                } else {
+                    db.ref('lessons').set(defaultLessons);
+                }
+                if (typeof renderPlaylist === 'function') renderPlaylist();
+            });
+        }
 
         document.addEventListener("DOMContentLoaded", function () {
             checkUserState();
         });
 
-        // 4. Chuyển trang (Trang chủ / Trang bài học)
+        // 3. Modal Đăng Nhập / Đăng Ký
+        function openLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function openRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // 4. Xử lý Đăng Nhập / Đăng Ký / Đăng Xuất
+        function handleLogin(event) {
+            if (event) event.preventDefault();
+            const usernameElem = document.getElementById('loginUsername');
+            const usernameInput = usernameElem ? usernameElem.value.trim() : '';
+            const nameFromEmail = usernameInput.includes('@') ? usernameInput.split('@')[0] : usernameInput;
+            const userData = { name: nameFromEmail || "Học Viên", progress: { math12: 0, math11: 0, math10: 0 } };
+
+            localStorage.setItem('eduMathUser', JSON.stringify(userData));
+            closeLoginModal();
+            checkUserState();
+            showToast(`🎉 Chào mừng ${userData.name} quay trở lại!`);
+        }
+
+        function handleRegister(event) {
+            if (event) event.preventDefault();
+            const nameElem = document.getElementById('regFullName');
+            const fullName = nameElem ? nameElem.value.trim() : 'Học Viên';
+            const userData = { name: fullName || "Học Viên", progress: { math12: 0, math11: 0, math10: 0 } };
+
+            localStorage.setItem('eduMathUser', JSON.stringify(userData));
+            closeRegisterModal();
+            checkUserState();
+            showToast(`🎉 Đăng ký thành công! Chào mừng ${userData.name}.`);
+        }
+
+        function handleLogout() {
+            if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+                localStorage.removeItem('eduMathUser');
+                checkUserState();
+                showToast("Đã đăng xuất thành công.");
+            }
+        }
+
+        // 5. Chuyển trang & Khóa học
         function showPage(pageId) {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('lessonPage').classList.add('hidden');
-            document.getElementById(pageId).classList.remove('hidden');
+            const home = document.getElementById('homePage');
+            const lesson = document.getElementById('lessonPage');
+            if (home) home.classList.add('hidden');
+            if (lesson) lesson.classList.add('hidden');
+
+            const target = document.getElementById(pageId);
+            if (target) target.classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Mở trang bài giảng chi tiết
         function openCoursePage(courseKey) {
             currentCourseKey = courseKey;
             const course = coursesData[courseKey];
-            if (course) {
-                document.getElementById('courseBadge').innerText = course.badge;
-            }
+            const badge = document.getElementById('courseBadge');
+            if (course && badge) badge.innerText = course.badge;
 
             showPage('lessonPage');
             renderPlaylist();
 
-            // Chọn phát bài đầu tiên nếu có
             const lessons = lessonsStore[currentCourseKey] || [];
             if (lessons.length > 0) {
                 playVideo(lessons[0]);
             }
         }
 
-        // Render danh sách bài học (Playlist)
+        // Render danh sách bài học (Đã có thêm Nút Xóa 🗑️)
         function renderPlaylist() {
             const playlist = document.getElementById('playlist');
             if (!playlist) return;
@@ -510,18 +570,57 @@
             }
 
             lessons.forEach((item) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-3.5 rounded-xl border border-slate-100 hover:bg-blue-50 hover:border-blue-200 transition flex items-center justify-between gap-3 text-sm font-medium text-slate-700";
-                btn.onclick = () => playVideo(item);
-                btn.innerHTML = `
-                <span class="line-clamp-1"><i class="fa-solid fa-play-circle text-blue-600 mr-2"></i> ${item.title}</span>
-                <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                const div = document.createElement('div');
+                div.className = "w-full p-3.5 rounded-xl border border-slate-100 hover:bg-blue-50 hover:border-blue-200 transition flex items-center justify-between gap-2 text-sm font-medium text-slate-700 group";
+
+                div.innerHTML = `
+                <button onclick="playVideoById(${item.id})" class="flex-1 text-left flex items-center gap-2 line-clamp-1">
+                    <i class="fa-solid fa-play-circle text-blue-600 flex-shrink-0"></i>
+                    <span class="truncate">${item.title}</span>
+                </button>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button onclick="deleteLesson(${item.id}, event)" title="Xóa bài học này" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
             `;
-                playlist.appendChild(btn);
+                playlist.appendChild(div);
             });
         }
 
-        // Hàm tách ID và tạo link nhúng YouTube
+        // Hàm chọn phát video theo ID
+        function playVideoById(lessonId) {
+            const lessons = lessonsStore[currentCourseKey] || [];
+            const lesson = lessons.find(l => l.id === lessonId);
+            if (lesson) playVideo(lesson);
+        }
+
+        // 🔴 HÀM XÓA BÀI HỌC (Đồng bộ Firebase)
+        function deleteLesson(lessonId, event) {
+            if (event) event.stopPropagation();
+
+            if (!confirm("⚠️ Bạn có chắc chắn muốn xóa bài học này không?")) return;
+
+            // Bỏ bài học ra khỏi danh sách
+            lessonsStore[currentCourseKey] = (lessonsStore[currentCourseKey] || []).filter(item => item.id !== lessonId);
+
+            // Đẩy cập nhật lên Firebase
+            if (db) {
+                db.ref('lessons').set(lessonsStore)
+                    .then(() => {
+                        renderPlaylist();
+                        showToast("🗑️ Đã xóa bài học thành công!");
+                    })
+                    .catch((error) => {
+                        showToast("❌ Lỗi xóa: " + error.message);
+                    });
+            } else {
+                localStorage.setItem('eduMathLessons', JSON.stringify(lessonsStore));
+                renderPlaylist();
+                showToast("🗑️ Đã xóa bài học thành công!");
+            }
+        }
+
         function getYouTubeEmbedUrl(url) {
             if (!url) return null;
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -529,7 +628,6 @@
             return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}?autoplay=1` : null;
         }
 
-        // Phát Video (Hỗ trợ cả YouTube & File MP4)
         function playVideo(lesson) {
             const videoPlayer = document.getElementById('videoPlayer');
             const youtubePlayer = document.getElementById('youtubePlayer');
@@ -538,15 +636,8 @@
 
             if (title) title.innerText = lesson.title;
 
-            // Reset các trình phát
-            if (videoPlayer) {
-                videoPlayer.classList.add('hidden');
-                videoPlayer.pause();
-            }
-            if (youtubePlayer) {
-                youtubePlayer.classList.add('hidden');
-                youtubePlayer.src = '';
-            }
+            if (videoPlayer) { videoPlayer.classList.add('hidden'); videoPlayer.pause(); }
+            if (youtubePlayer) { youtubePlayer.classList.add('hidden'); youtubePlayer.src = ''; }
             if (placeholder) placeholder.classList.add('hidden');
 
             if (!lesson.src) {
@@ -569,69 +660,55 @@
             addProgress(currentCourseKey, 10);
         }
 
-        // 5. Thêm bài giảng & Lưu đồng bộ trực tiếp lên Firebase
         function handleUploadVideo() {
-            const titleInput = document.getElementById('uploadTitle').value.trim();
-            const urlInput = document.getElementById('videoUrlInput').value.trim();
+            const titleElem = document.getElementById('uploadTitle');
+            const urlElem = document.getElementById('videoUrlInput');
+            const titleInput = titleElem ? titleElem.value.trim() : '';
+            const urlInput = urlElem ? urlElem.value.trim() : '';
 
-            if (!titleInput) {
-                showToast("⚠️ Vui lòng nhập tên bài giảng!");
-                return;
-            }
+            if (!titleInput) { showToast("⚠️ Vui lòng nhập tên bài giảng!"); return; }
+            if (!urlInput) { showToast("⚠️ Vui lòng dán đường link video (YouTube)!"); return; }
 
-            if (!urlInput) {
-                showToast("⚠️ Vui lòng dán đường link video (YouTube)!");
-                return;
-            }
+            const newLesson = { id: Date.now(), title: titleInput, src: urlInput };
 
-            const newLesson = {
-                id: Date.now(),
-                title: titleInput,
-                src: urlInput
-            };
-
-            if (!lessonsStore[currentCourseKey]) {
-                lessonsStore[currentCourseKey] = [];
-            }
+            if (!lessonsStore[currentCourseKey]) lessonsStore[currentCourseKey] = [];
             lessonsStore[currentCourseKey].push(newLesson);
 
-            // Đẩy lên Firebase Realtime Database
-            db.ref('lessons').set(lessonsStore)
-                .then(() => {
-                    renderPlaylist();
-                    playVideo(newLesson);
-
-                    document.getElementById('uploadTitle').value = '';
-                    document.getElementById('videoUrlInput').value = '';
-
-                    showToast("🎉 Thêm bài giảng & Lưu lên Firebase thành công!");
-                })
-                .catch((error) => {
-                    showToast("❌ Lỗi đồng bộ: " + error.message);
-                });
+            if (db) {
+                db.ref('lessons').set(lessonsStore)
+                    .then(() => {
+                        renderPlaylist();
+                        playVideo(newLesson);
+                        if (titleElem) titleElem.value = '';
+                        if (urlElem) urlElem.value = '';
+                        showToast("🎉 Thêm bài giảng & Lưu lên Firebase thành công!");
+                    })
+                    .catch((error) => { showToast("❌ Lỗi đồng bộ: " + error.message); });
+            } else {
+                localStorage.setItem('eduMathLessons', JSON.stringify(lessonsStore));
+                renderPlaylist();
+                playVideo(newLesson);
+                if (titleElem) titleElem.value = '';
+                if (urlElem) urlElem.value = '';
+                showToast("🎉 Đã thêm bài giảng!");
+            }
         }
 
-        // 6. Cập nhật Tiến độ (% Tiến trình)
+        // 6. Cập nhật Tiến độ & Người dùng
         function renderProgressUI() {
             const savedUser = JSON.parse(localStorage.getItem('eduMathUser'));
             let progress = { math12: 0, math11: 0, math10: 0 };
+            if (savedUser && savedUser.progress) progress = savedUser.progress;
 
-            if (savedUser && savedUser.progress) {
-                progress = savedUser.progress;
-            }
-
-            const p12 = document.getElementById('percentMath12');
-            const b12 = document.getElementById('barMath12');
+            const p12 = document.getElementById('percentMath12'), b12 = document.getElementById('barMath12');
             if (p12) p12.innerText = (progress.math12 || 0) + '%';
             if (b12) b12.style.width = (progress.math12 || 0) + '%';
 
-            const p11 = document.getElementById('percentMath11');
-            const b11 = document.getElementById('barMath11');
+            const p11 = document.getElementById('percentMath11'), b11 = document.getElementById('barMath11');
             if (p11) p11.innerText = (progress.math11 || 0) + '%';
             if (b11) b11.style.width = (progress.math11 || 0) + '%';
 
-            const p10 = document.getElementById('percentMath10');
-            const b10 = document.getElementById('barMath10');
+            const p10 = document.getElementById('percentMath10'), b10 = document.getElementById('barMath10');
             if (p10) p10.innerText = (progress.math10 || 0) + '%';
             if (b10) b10.style.width = (progress.math10 || 0) + '%';
         }
@@ -647,7 +724,6 @@
             renderProgressUI();
         }
 
-        // 7. Quản lý Đăng nhập / Đăng ký / Đăng xuất
         function checkUserState() {
             const savedUser = JSON.parse(localStorage.getItem('eduMathUser'));
             const authButtons = document.getElementById('authButtons');
@@ -660,7 +736,6 @@
 
                 const nameDisp = document.getElementById('userNameDisplay');
                 const avatar = document.getElementById('userAvatar');
-
                 if (nameDisp) nameDisp.innerText = savedUser.name;
                 if (avatar) avatar.innerText = savedUser.name.charAt(0).toUpperCase();
 
@@ -674,47 +749,9 @@
                     welcomeText.innerText = "Chào bạn! Hãy đăng nhập để lưu giữ tiến độ bài học.";
                 }
             }
-
             renderProgressUI();
         }
 
-        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
-        function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
-        function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
-
-        function handleLogin(event) {
-            event.preventDefault();
-            const usernameInput = document.getElementById('loginUsername').value;
-            const nameFromEmail = usernameInput.includes('@') ? usernameInput.split('@')[0] : usernameInput;
-            const userData = { name: nameFromEmail || "Học Viên", progress: { math12: 0, math11: 0, math10: 0 } };
-
-            localStorage.setItem('eduMathUser', JSON.stringify(userData));
-            closeLoginModal();
-            checkUserState();
-            showToast(`🎉 Chào mừng ${userData.name} quay trở lại!`);
-        }
-
-        function handleRegister(event) {
-            event.preventDefault();
-            const fullName = document.getElementById('regFullName').value;
-            const userData = { name: fullName, progress: { math12: 0, math11: 0, math10: 0 } };
-
-            localStorage.setItem('eduMathUser', JSON.stringify(userData));
-            closeRegisterModal();
-            checkUserState();
-            showToast(`🎉 Đăng ký thành công! Chào mừng ${fullName}.`);
-        }
-
-        function handleLogout() {
-            if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
-                localStorage.removeItem('eduMathUser');
-                checkUserState();
-                showToast("Đã đăng xuất thành công.");
-            }
-        }
-
-        // 8. Thông báo Toast
         function showToast(message) {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMessage');
@@ -722,7 +759,6 @@
             if (toast) {
                 toast.classList.remove('translate-x-full', 'opacity-0');
                 toast.classList.add('translate-x-0', 'opacity-100');
-
                 setTimeout(() => {
                     toast.classList.remove('translate-x-0', 'opacity-100');
                     toast.classList.add('translate-x-full', 'opacity-0');
