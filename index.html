@@ -25,7 +25,7 @@
 
     <!-- Toast Thông Báo -->
     <div id="toast"
-        class="fixed top-20 right-5 z-50 transform translate-x-full opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+        class="fixed top-20 right-5 z-[99] transform translate-x-full opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
         <i id="toastIcon" class="fa-solid fa-circle-check text-green-400 text-lg"></i>
         <span id="toastMessage" class="text-sm font-medium">Thông báo</span>
     </div>
@@ -321,6 +321,32 @@
                             Thêm bài giảng & Phát ngay
                         </button>
                     </div>
+                    <!-- Cục trắc nghiệm kết hợp luôn quyền của giáo viên -->
+                    <div id="quizContainer" class="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+
+                        <!-- Phần điều khiển của giáo viên (nút tạo câu hỏi / tải bài) -->
+                        <div id="teacherSection" class="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                            <h3 class="text-sm font-bold text-purple-900 mb-2">Khu vực dành cho Giáo viên</h3>
+                            <button onclick="openCreateQuizModal()"
+                                class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold">
+                                + Thêm câu hỏi trắc nghiệm
+                            </button>
+                        </div>
+
+                        <!-- Danh sách câu hỏi cho học sinh -->
+                        <div id="quizListContent" class="space-y-6">
+                            <p class="text-sm text-slate-500 italic">Chưa có câu hỏi trắc nghiệm nào cho khóa học này.
+                            </p>
+                        </div>
+
+                        <!-- Nút nộp bài -->
+                        <div id="submitQuizSection" class="mt-6 hidden">
+                            <button onclick="submitQuizAnswers()"
+                                class="w-full py-3 bg-purple-600 text-white rounded-xl font-semibold">
+                                Nộp bài & Xem kết quả
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -416,6 +442,66 @@
                     class="w-full py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition text-sm">Đăng
                     Ký</button>
             </form>
+        </div>
+    </div>
+    <!-- Modal Thêm Câu Hỏi Trắc Nghiệm dành cho Giáo Viên -->
+    <div id="createQuizModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800">Thêm câu hỏi trắc nghiệm mới</h3>
+                <button onclick="closeCreateQuizModal()"
+                    class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nội dung câu hỏi</label>
+                    <textarea id="newQuestionText" rows="2"
+                        class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                        placeholder="Nhập câu hỏi..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Đáp án A</label>
+                    <input type="text" id="newOptA"
+                        class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                        placeholder="Nhập nội dung câu A">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Đáp án B</label>
+                    <input type="text" id="newOptB"
+                        class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                        placeholder="Nhập nội dung câu B">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Đáp án C</label>
+                    <input type="text" id="newOptC"
+                        class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                        placeholder="Nhập nội dung câu C">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Đáp án D</label>
+                    <input type="text" id="newOptD"
+                        class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                        placeholder="Nhập nội dung câu D">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Đáp án đúng (Chọn A, B, C hoặc
+                        D)</label>
+                    <select id="newCorrectOpt"
+                        class="w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t">
+                <button onclick="closeCreateQuizModal()"
+                    class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 font-semibold">Hủy</button>
+                <button onclick="saveNewQuiz()"
+                    class="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-semibold">Lưu câu
+                    hỏi</button>
+            </div>
         </div>
     </div>
 
@@ -539,6 +625,7 @@
             usersList.push(newUser);
             localStorage.setItem('eduMathUsersList', JSON.stringify(usersList));
             localStorage.setItem('eduMathUser', JSON.stringify(newUser));
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
 
             closeRegisterModal();
             checkUserState();
@@ -561,8 +648,10 @@
 
             if (foundUser) {
                 localStorage.setItem('eduMathUser', JSON.stringify(foundUser));
+                localStorage.setItem('currentUser', JSON.stringify(foundUser));
                 closeLoginModal();
                 checkUserState();
+                if (typeof renderPlaylist === 'function') renderPlaylist();
                 showToast(`🎉 Chào mừng ${foundUser.name} quay trở lại!`);
             } else {
                 showToast("❌ Tài khoản chưa tồn tại! Vui lòng Đăng ký trước.");
@@ -572,7 +661,9 @@
         function handleLogout() {
             if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
                 localStorage.removeItem('eduMathUser');
+                localStorage.removeItem('currentUser');
                 checkUserState();
+                if (typeof renderPlaylist === 'function') renderPlaylist();
                 showToast("Đã đăng xuất thành công.");
             }
         }
@@ -597,6 +688,8 @@
 
             showPage('lessonPage');
             renderPlaylist();
+            // Xử lí lỗi giáo viên:
+            renderQuizzesForCourse(courseKey);
 
             const lessons = lessonsStore[currentCourseKey] || [];
             if (lessons.length > 0) {
@@ -604,21 +697,39 @@
             }
         }
 
-        // Render danh sách bài học (Đã có thêm Nút Xóa 🗑️)
+        // // Render danh sách bài học (Đã phân quyền: Chỉ Giáo viên mới có nút Xóa)
         function renderPlaylist() {
             const playlist = document.getElementById('playlist');
             if (!playlist) return;
             playlist.innerHTML = '';
             const lessons = lessonsStore[currentCourseKey] || [];
 
+            // Lấy thông tin user hiện tại và kiểm tra vai trò Giáo viên chuẩn đét
+            const rawUser = localStorage.getItem('currentUser') || localStorage.getItem('eduMathUser') || '{}';
+            let isTeacher = false;
+            try {
+                const savedUser = JSON.parse(rawUser);
+                const roleStr = String(savedUser.role || savedUser.userRole || '').toLowerCase();
+                isTeacher = roleStr === 'teacher' || roleStr.includes('giáo viên') || roleStr.includes('gv');
+            } catch (e) {
+                isTeacher = false;
+            }
+
             if (lessons.length === 0) {
-                playlist.innerHTML = '<p class="text-xs text-slate-400 py-4 text-center">Chưa có bài học nào. Hãy tải video lên!</p>';
+                playlist.innerHTML = '<p class="text-xs text-slate-400 py-4 text-center">Chưa có bài học nào.</p>';
                 return;
             }
 
             lessons.forEach((item) => {
                 const div = document.createElement('div');
-                div.className = "w-full p-3.5 rounded-xl border border-slate-100 hover:bg-blue-50 hover:border-blue-200 transition flex items-center justify-between gap-2 text-sm font-medium text-slate-700 group";
+                div.className = "w-full p-3.5 rounded-xl border border-slate-100 hover:bg-blue-50 hover:border-blue-200 transition flex items-center justify-between gap-2 text-sm font-medium text-slate-700";
+
+                // 🟢 CHỈ TẠO NÚT XÓA NẾU LÀ GIÁO VIÊN
+                const deleteBtnHtml = isTeacher ? `
+                <button onclick="deleteLesson(${item.id}, event)" title="Xóa bài học" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+            ` : '';
 
                 div.innerHTML = `
                 <button onclick="playVideoById(${item.id})" class="flex-1 text-left flex items-center gap-2 line-clamp-1">
@@ -626,9 +737,7 @@
                     <span class="truncate">${item.title}</span>
                 </button>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <button onclick="deleteLesson(${item.id}, event)" title="Xóa bài học này" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                    </button>
+                    ${deleteBtnHtml}
                 </div>
             `;
                 playlist.appendChild(div);
@@ -812,7 +921,245 @@
                 }, 3000);
             }
         }
+        // --- QUẢN LÝ CÂU HỎI TRẮC NGHIỆM ---
+
+        // Kho lưu trữ câu hỏi tạm thời
+        let quizzesStore = JSON.parse(localStorage.getItem('eduMathQuizzes')) || {
+            math12: [],
+            math11: [],
+            math10: []
+        };
+
+        // Mở bảng tạo câu hỏi
+        function openQuizModal() {
+            const modal = document.getElementById('quizModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        // Đóng bảng tạo câu hỏi
+        function closeQuizModal() {
+            const modal = document.getElementById('quizModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // Xử lý lưu câu hỏi trắc nghiệm
+        function handleSaveQuiz(event) {
+            event.preventDefault();
+
+            // Kiểm tra bảo mật: Chỉ giáo viên mới được lưu
+            const savedUser = JSON.parse(localStorage.getItem('eduMathUser'));
+            if (!savedUser || savedUser.role !== 'teacher') {
+                showToast("❌ Chỉ giáo viên mới có quyền tạo câu hỏi!");
+                return;
+            }
+
+            // Lấy dữ liệu từ các ô input
+            const question = document.getElementById('quizQuestion').value.trim();
+            const optA = document.getElementById('optA').value.trim();
+            const optB = document.getElementById('optB').value.trim();
+            const optC = document.getElementById('optC').value.trim();
+            const optD = document.getElementById('optD').value.trim();
+            const correctOpt = document.getElementById('correctOpt').value;
+
+            if (!question || !optA || !optB || !optC || !optD) {
+                showToast("⚠️ Vui lòng điền đầy đủ thông tin câu hỏi và đáp án!");
+                return;
+            }
+
+            // Tạo đối tượng câu hỏi mới
+            const newQuiz = {
+                id: Date.now(),
+                question,
+                optA,
+                optB,
+                optC,
+                optD,
+                correctOpt
+            };
+
+            // Đẩy vào kho lưu trữ của khóa học hiện tại (mặc định đang chọn math12 hoặc khóa đang active)
+            if (!quizzesStore[currentCourseKey]) {
+                quizzesStore[currentCourseKey] = [];
+            }
+            quizzesStore[currentCourseKey].push(newQuiz);
+
+            // Lưu vào localStorage
+            localStorage.setItem('eduMathQuizzes', JSON.stringify(quizzesStore));
+
+            // Nếu có Firebase thì đẩy lên Firebase luôn
+            if (db) {
+                db.ref('quizzes').set(quizzesStore).catch(err => console.log(err));
+            }
+
+            // Reset form và đóng modal
+            event.target.reset();
+            closeQuizModal();
+            showToast("✅ Đã tạo câu hỏi trắc nghiệm thành công!");
+        }
+        // Hàm kiểm tra và hiển thị nút tạo trắc nghiệm cho giáo viên
+        function checkTeacherQuizPermission() {
+            const savedUser = JSON.parse(localStorage.getItem('eduMathUser'));
+            const teacherQuizControl = document.getElementById('teacherQuizControl');
+
+            if (teacherQuizControl) {
+                if (savedUser && savedUser.role === 'teacher') {
+                    teacherQuizControl.classList.remove('hidden'); // Hiện nút nếu là giáo viên
+                } else {
+                    teacherQuizControl.classList.add('hidden'); // Ẩn đi nếu là học sinh hoặc chưa đăng nhập
+                }
+            }
+        }
+
+        // Gọi hàm này ngay khi trang vừa tải xong
+        window.addEventListener('DOMContentLoaded', () => {
+            checkTeacherQuizPermission();
+            // Thêm dòng này để khi mở trang lên nó tự động load câu hỏi ra luôn:
+            if (typeof currentCourseKey !== 'undefined') {
+                renderQuizzesForCourse(currentCourseKey);
+            }
+        });
+        // --- HIỂN THỊ VÀ CHẤM ĐIỂM TRẮC NGHIỆM ---
+
+        // Hàm load và hiển thị danh sách câu hỏi theo khóa học
+        function renderQuizzesForCourse(courseKey) {
+            const quizListContent = document.getElementById('quizListContent');
+            const submitSection = document.getElementById('submitQuizSection');
+
+            if (!quizListContent) return;
+
+            const courseQuizzes = quizzesStore[courseKey] || [];
+
+            if (courseQuizzes.length === 0) {
+                quizListContent.innerHTML = `<p class="text-sm text-slate-500 italic">Chưa có câu hỏi trắc nghiệm nào cho khóa học này.</p>`;
+                if (submitSection) submitSection.classList.add('hidden');
+                return;
+            }
+
+            let html = '';
+            courseQuizzes.forEach((q, index) => {
+                html += `
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <p class="font-semibold text-slate-800">Câu ${index + 1}: ${q.question}</p>
+                <div class="space-y-2 text-sm text-slate-700">
+                    <label class="flex items-center gap-2 cursor-pointer hover:text-purple-600">
+                        <input type="radio" name="question_${q.id}" value="A" class="text-purple-600"> A. ${q.optA}
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer hover:text-purple-600">
+                        <input type="radio" name="question_${q.id}" value="B" class="text-purple-600"> B. ${q.optB}
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer hover:text-purple-600">
+                        <input type="radio" name="question_${q.id}" value="C" class="text-purple-600"> C. ${q.optC}
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer hover:text-purple-600">
+                        <input type="radio" name="question_${q.id}" value="D" class="text-purple-600"> D. ${q.optD}
+                    </label>
+                </div>
+            </div>
+        `;
+            });
+
+            quizListContent.innerHTML = html;
+            if (submitSection) submitSection.classList.remove('hidden');
+        }
+
+        // Hàm chấm điểm khi học sinh bấm nộp bài
+        function submitQuizAnswers() {
+            const courseQuizzes = quizzesStore[currentCourseKey] || [];
+            if (courseQuizzes.length === 0) return;
+
+            let score = 0;
+            let answeredCount = 0;
+
+            courseQuizzes.forEach(q => {
+                const selectedOpt = document.querySelector(`input[name="question_${q.id}"]:checked`);
+                if (selectedOpt) {
+                    answeredCount++;
+                    if (selectedOpt.value === q.correctOpt) {
+                        score++;
+                    }
+                }
+            });
+
+            if (answeredCount === 0) {
+                showToast("⚠️ Vui lòng trả lời ít nhất một câu hỏi trước khi nộp bài!");
+                return;
+            }
+
+            showToast(`🎉 Bạn đã trả lời đúng ${score}/${courseQuizzes.length} câu hỏi!`);
+        }
+
+        // Hàm mở bảng tạo câu hỏi trắc nghiệm (Chặn Học sinh tuyệt đối)
+        function openCreateQuizModal() {
+            // 1. Lấy thông tin user hiện tại từ localStorage
+            const rawUser = localStorage.getItem('currentUser') || localStorage.getItem('eduMathUser') || '{}';
+            let roleStr = "";
+
+            try {
+                const savedUser = JSON.parse(rawUser);
+                roleStr = String(savedUser.role || savedUser.userRole || rawUser).toLowerCase();
+            } catch (e) {
+                roleStr = String(rawUser).toLowerCase();
+            }
+
+            // 2. Nếu là Học sinh -> Chặn ngay lập tức
+            if (roleStr.includes('student') || roleStr.includes('học sinh')) {
+                alert("⛔ Tài khoản Học sinh không có quyền thêm câu hỏi trắc nghiệm!");
+                return; // Dừng hàm, không cho mở modal
+            }
+
+            // 3. Nếu không phải Giáo viên -> Chặn luôn
+            if (!roleStr.includes('teacher') && !roleStr.includes('giáo viên') && !roleStr.includes('gv')) {
+                alert("⛔ Bạn không có quyền truy cập tính năng này!");
+                return;
+            }
+
+            // 4. Đúng là Giáo viên -> Cho phép mở Modal
+            const modal = document.getElementById('createQuizModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            } else {
+                alert('Chưa tìm thấy khung tạo câu hỏi (modal).');
+            }
+        }
+
+        function closeCreateQuizModal() {
+            const modal = document.getElementById('createQuizModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function saveNewQuiz() {
+            const qText = document.getElementById('newQuestionText').value;
+            const optA = document.getElementById('newOptA').value;
+            const optB = document.getElementById('newOptB').value;
+            const optC = document.getElementById('newOptC').value;
+            const optD = document.getElementById('newOptD').value;
+            const correct = document.getElementById('newCorrectOpt').value;
+
+            if (!qText || !optA || !optB || !optC || !optD) {
+                alert("Vui lòng điền đầy đủ thông tin!");
+                return;
+            }
+
+            courseQuizzes.push({
+                id: Date.now(),
+                question: qText,
+                optA: optA,
+                optB: optB,
+                optC: optC,
+                optD: optD,
+                correctOpt: correct
+            });
+
+            closeCreateQuizModal();
+            if (typeof renderQuizzes === 'function') {
+                renderQuizzes();
+            }
+            showToast("🎉 Đã thêm câu hỏi thành công!");
+        }
     </script>
+
 </body>
 
 </html>
